@@ -70,7 +70,7 @@ def recover_entities_for_guu_paths(ent_nighbors):
 def get_graph(train_data,validation_data,test_data):
       # graph = {'A': [('B', 'ab'), ('C', 'ac'), ('D', 'ad')], 'B': [('E','be')],...}
         graph_train = {}
-        graph_dev = {}
+        graph_val = {}
         graph_test = {}
         graph = {}
        
@@ -78,16 +78,16 @@ def get_graph(train_data,validation_data,test_data):
         adj_values = torch.LongTensor(train_data[1][2])
         train_adj_matrix = (adj_indices, adj_values)
 
-        adj_indices_dev = torch.LongTensor([validation_data[1][0], validation_data[1][1]])  # rows and columns
-        adj_values_dev = torch.LongTensor(validation_data[1][2])
-        dev_adj_matrix = (adj_indices_dev, adj_values_dev)
+        adj_indices_valid = torch.LongTensor([validation_data[1][0], validation_data[1][1]])  # rows and columns
+        adj_values_valid = torch.LongTensor(validation_data[1][2])
+        valid_adj_matrix = (adj_indices_valid, adj_values_valid)
 
         adj_indices_test = torch.LongTensor([test_data[1][0], test_data[1][1]])  # rows and columns
         adj_values_test = torch.LongTensor(test_data[1][2])
         test_adj_matrix = (adj_indices_test, adj_values_test)
 
         all_tiples_train = torch.cat([train_adj_matrix[0].transpose(0, 1), train_adj_matrix[1].unsqueeze(1)], dim=1)
-        all_tiples_dev = torch.cat([dev_adj_matrix[0].transpose(0, 1), dev_adj_matrix[1].unsqueeze(1)],dim=1)
+        all_tiples_valid = torch.cat([valid_adj_matrix[0].transpose(0, 1), valid_adj_matrix[1].unsqueeze(1)],dim=1)
         all_tiples_test = torch.cat([test_adj_matrix[0].transpose(0, 1), test_adj_matrix[1].unsqueeze(1)],dim=1)
 
         for data in all_tiples_train:
@@ -111,25 +111,25 @@ def get_graph(train_data,validation_data,test_data):
                 graph[target] = []
         print("Train_Graph created")
 
-        for data in all_tiples_dev:
-            source_dev = data[1].data.item()
-            target_dev = data[0].data.item()
-            value_dev = data[2].data.item()
-            if(source_dev not in graph_dev.keys()):
-                graph_dev[source_dev] = []
-                graph_dev[source_dev].append((target_dev,value_dev))
+        for data in all_tiples_valid:
+            source_val = data[1].data.item()
+            target_val = data[0].data.item()
+            value_val = data[2].data.item()
+            if(source_val not in graph_val.keys()):
+                graph_val[source_val] = []
+                graph_val[source_val].append((target_val,value_val))
             else:
-                graph_dev[source_dev].append((target_dev,value_dev))
-            if (target_dev not in graph_dev.keys()):
-                graph_dev[target_dev] = []
-            if (source_dev not in graph.keys()):
-                graph[source_dev] = []
-                graph[source_dev].append((target_dev, value_dev))
+                graph_val[source_val].append((target_val,value_val))
+            if (target_val not in graph_val.keys()):
+                graph_val[target_val] = []
+            if (source_val not in graph.keys()):
+                graph[source_val] = []
+                graph[source_val].append((target_val, value_val))
             else:
-                graph[source_dev].append((target_dev, value_dev))
-            if (target_dev not in graph.keys()):
-                graph[target_dev] = []
-        print("Dev_Graph created")
+                graph[source_val].append((target_val, value_val))
+            if (target_val not in graph.keys()):
+                graph[target_val] = []
+        print("val_Graph created")
         for data in all_tiples_test:
             source_test = data[1].data.item()
             target_test = data[0].data.item()
@@ -153,7 +153,7 @@ def get_graph(train_data,validation_data,test_data):
                 graph[target_test] = []
         print("Test_Graph created")
         # print(graph[40790])
-        return graph_train, graph_dev, graph_test,graph
+        return graph_train, graph_val, graph_test,graph
 
 def findAllPath(graph, start, end, flag, path=[]):
     if flag == 0:
@@ -249,9 +249,9 @@ def entity_dgree(graph):
     print(i,count)
 
 def path_length():
-    dev_paths = torch.load("./data/FB15k-237/valid_paths.pt")
+    val_paths = torch.load("./data/FB15k-237/valid_paths.pt")
     max_length = 0
-    for i in dev_paths:
+    for i in val_paths:
         l = len(i)
         if l > max_length:
             max_length = l
@@ -301,7 +301,7 @@ def draw_neighbor_freq(graph_train,graph_valid,graph_test):
     ax3 = sns.histplot(x_test, kde=False, ax=axes[2])
     axes_list = [ax1, ax2, ax3]
     ax1.set_xlabel("neighbors count of train graph")
-    ax2.set_xlabel("neighbors count of dev graph")
+    ax2.set_xlabel("neighbors count of val graph")
     ax3.set_xlabel("neighbors count of test graph")
     
     for ax in axes_list:
@@ -336,7 +336,8 @@ if __name__ == '__main__':
    graph_train, graph_valid, graph_test, graph = get_graph(train_data, validation_data, test_data)
   
    train_paths = get_path(graph_train)
-   torch.save(train_paths, datasets + "train_paths_11.pt")
+   torch.save(train_paths, datasets + "train_paths.pt")
    print(train_paths[:10], len(train_paths))
  
+
 
