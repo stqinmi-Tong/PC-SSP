@@ -198,14 +198,5 @@ def neg_entity_tensor_v2(ent_idmatrix, rel_idmatrix, pair2tailset, rel2tailset, 
     return np.asarray(negs).reshape((length, neg_size))
 
 
-if __name__ == "__main__":
-    root = "../generate_path/data/FB15k-237"
-    files = ['train_paths.pt','path_store_dev_5.pt','path_store_test_5.pt']
-    corpus, tuple2tailset, rel2tailset = load_data(root, files)
-    filename = osp.join(root, files[0])
-    read_pathfile = torch.load(filename)
-    train_set = corpus[0] 
-    train_paths_store = train_set[0]  
-    train_masks_store = train_set[1]  
-    train_ents_store = train_set[2]  
   
+
