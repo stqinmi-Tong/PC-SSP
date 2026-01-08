@@ -13,15 +13,15 @@ def keylist_2_valuelist(keylist, dic, start_index=0):
         value_list.append(value)
     return value_list
 def get_rel_dict(rel_list,relation_str2id,relation_id2wordlist):
-    one_path = []  # 关系集合中各关系的编号
+    one_path = []  
     for potential_relation in rel_list:
         rel_id = relation_str2id.get(potential_relation)
         if rel_id is None:
-            rel_id = len(relation_str2id) + 1  # 将关系进行编号，并储存到字典中
+            rel_id = len(relation_str2id) + 1  
             relation_str2id[potential_relation] = rel_id
-        wordlist = potential_relation.split('_')  # 将关系中的各个单词分割
-        relation_id2wordlist[rel_id] = wordlist # 构成关系和关系中包含的词列表的词典：{r：[r_word1,r_word2,...]}
-        one_path.append(rel_id)  # 关系集合编号
+        wordlist = potential_relation.split('_')  
+        relation_id2wordlist[rel_id] = wordlist 
+        one_path.append(rel_id)  
     return one_path,relation_str2id,relation_id2wordlist
 def add_tuple2tailset(ent_path, one_path, tuple2tailset):
     size = len(one_path)
@@ -29,14 +29,14 @@ def add_tuple2tailset(ent_path, one_path, tuple2tailset):
         print('len(ent_path)!=len(one_path)+1:', len(ent_path), size)
         exit(0)
     for i in range(size):
-        tuple = (ent_path[i], one_path[i])  # 实体En与关系Rn
-        tail = ent_path[i + 1]  # 实体En+1
+        tuple = (ent_path[i], one_path[i]) 
+        tail = ent_path[i + 1]  
         tailset = tuple2tailset.get(tuple)
         if tailset is None:
             tailset = set()
         if tail not in tailset:
             tailset.add(tail)
-            tuple2tailset[tuple] = tailset  # 三元组的存储方式:{(En, Rn): set(En+1, ...)}
+            tuple2tailset[tuple] = tailset 
 
 
 def add_rel2tailset(ent_path, one_path, rel2tailset):
@@ -53,7 +53,7 @@ def add_rel2tailset(ent_path, one_path, rel2tailset):
             tailset = set()
         if tail not in tailset:
             tailset.add(tail)
-            rel2tailset[rel] = tailset  # 存储的是关系Rn与(实体En+1, ...)
+            rel2tailset[rel] = tailset 
 
 
 def add_ent2relset(ent_path, one_path, ent2relset, maxSetSize):
@@ -70,21 +70,20 @@ def add_ent2relset(ent_path, one_path, ent2relset, maxSetSize):
         if rel_id not in relset:
             relset.add(rel_id)
             if len(relset) > maxSetSize:
-                maxSetSize = len(relset)  # 找出一个实体对应着多种关系
-            ent2relset[ent_id] = relset  # 存储的是实体En+1与(关系Rn, ...)
+                maxSetSize = len(relset)  
+            ent2relset[ent_id] = relset 
     return maxSetSize
 
 
-def load_data(rootPath, files, maxPathLen=2): ##也就是读取ent_recovered.txt文件，而我们自己生成的FB和WN的路径文件
-
-    tuple2tailset = {}  # 三元组
-    rel2tailset = {}  # 存储的是关系Rn与(实体En+1, ...)
-    ent2relset = {}  # 存储的是实体En+1与(关系Rn, ...)
+def load_data(rootPath, files, maxPathLen=2): 
+    tuple2tailset = {}  
+    rel2tailset = {} 
+    ent2relset = {}  
     ent2relset_maxSetSize = 0
 
-    train_paths_store = []  # 数据集中的关系列表
-    train_ents_store = []  # 数据集中的实体列表
-    train_masks_store = []  # 数据集中的标签列表
+    train_paths_store = []  
+    train_ents_store = []  
+    train_masks_store = [] 
 
     dev_paths_store=[]
     dev_ents_store = []
@@ -98,15 +97,15 @@ def load_data(rootPath, files, maxPathLen=2): ##也就是读取ent_recovered.txt
     max_path_len = 0
     for file_id, fil in enumerate(files):
 
-        # filename = rootPath + fil  # 数据集路径
+        # filename = rootPath + fil  
         filename = osp.join(rootPath, fil)
         print('loading', filename, '...')
         read_pathfile = torch.load(filename)
 
         for line in read_pathfile:
-            parts = line  # 数据集形式：E1\tR1\tE2...,通过分割将实体与关系分开
-            ent_list = []  # 实体集合
-            rel_list = []  # 关系集合
+            parts = line  
+            ent_list = []  
+            rel_list = [] 
             if len(parts)==1:
                 continue
             for i in range(len(parts)):
@@ -118,12 +117,12 @@ def load_data(rootPath, files, maxPathLen=2): ##也就是读取ent_recovered.txt
                 print('len(ent_list)!=len(rel_list)+1:', len(ent_list), len(rel_list))
                 print('line:', line)
                 exit(0)
-            ent_path = ent_list  # 存储路径中实体的编号
+            ent_path = ent_list  
             one_path = rel_list
-            #print(parts,ent_path,one_path) #[3061, 1, 15881, 0, 3062] [3061, 15881, 3062] [1, 0]
-            add_tuple2tailset(ent_path, one_path, tuple2tailset)  # 三元组的存储方式:{(En, Rn), set(En+1, ...)}
-            add_rel2tailset(ent_path, one_path, rel2tailset)  # 存储的是关系Rn与(实体En+1, ...)
-            ent2relset_maxSetSize = add_ent2relset(ent_path, one_path, ent2relset, ent2relset_maxSetSize)  # 存储的是实体En+1与(关系Rn, ...)
+            
+            add_tuple2tailset(ent_path, one_path, tuple2tailset) 
+            add_rel2tailset(ent_path, one_path, rel2tailset) 
+            ent2relset_maxSetSize = add_ent2relset(ent_path, one_path, ent2relset, ent2relset_maxSetSize) 
 
             # pad
             valid_size = len(one_path)
@@ -131,29 +130,29 @@ def load_data(rootPath, files, maxPathLen=2): ##也就是读取ent_recovered.txt
                 max_path_len = valid_size
             pad_size = maxPathLen - valid_size
             if pad_size > 0:
-                one_path = [0] * pad_size + one_path  # 若关系集合长度小于5在前面需要补0
-                ent_path = ent_path[:1] * (pad_size + 1) + ent_path[1:] # 将头实体在集合前面补全至集合长度为6
-                one_mask = [0.0] * pad_size + [1.0] * valid_size  # 将在标签集合中补0至集合长度为5
+                one_path = [0] * pad_size + one_path 
+                ent_path = ent_path[:1] * (pad_size + 1) + ent_path[1:] 
+                one_mask = [0.0] * pad_size + [1.0] * valid_size  
             else:
                 one_path = one_path[-maxPathLen:]  # select the last max_len relations
                 ent_path = ent_path[:1] + ent_path[-maxPathLen:]
                 one_mask = [1.0] * maxPathLen
 
-            if file_id == 0:  # 训练集
+            if file_id == 0: 
                 if len(ent_path) != maxPathLen + 1 or len(one_path) != maxPathLen:
                     print('line:', line)
                     exit(0)
-                train_paths_store.append(one_path)  # 数据集中的关系列表
-                train_ents_store.append(ent_path)  # 数据集中的实体列表
-                train_masks_store.append(one_mask)  # 数据集中的标签列表
-            if file_id == 1:  # 验证集
+                train_paths_store.append(one_path)  
+                train_ents_store.append(ent_path) 
+                train_masks_store.append(one_mask)  
+            if file_id == 1:  
                 if len(ent_path) != maxPathLen + 1 or len(one_path) != maxPathLen:
                     print('line:', line)
                     exit(0)
                 dev_paths_store.append(one_path)
                 dev_ents_store.append(ent_path)
                 dev_masks_store.append(one_mask)
-            if file_id == 2:  # 测试集
+            if file_id == 2: 
                 if len(ent_path) != maxPathLen + 1 or len(one_path) != maxPathLen:
                     print('line:', line)
                     exit(0)
@@ -200,16 +199,13 @@ def neg_entity_tensor_v2(ent_idmatrix, rel_idmatrix, pair2tailset, rel2tailset, 
 
 
 if __name__ == "__main__":
-    root = "/home/shent/.conda/envs/GCNConv/SSROP/generate_path/data/FB15k-237"
+    root = "../generate_path/data/FB15k-237"
     files = ['train_paths.pt','path_store_dev_5.pt','path_store_test_5.pt']
     corpus, tuple2tailset, rel2tailset = load_data(root, files)
     filename = osp.join(root, files[0])
     read_pathfile = torch.load(filename)
-    train_set = corpus[0]  # 训练数据集
-    train_paths_store = train_set[0]  # 关系列表
-    train_masks_store = train_set[1]  # 标签列表
-    train_ents_store = train_set[2]  # 实体列表
-    print(read_pathfile[:10])
-    print(train_paths_store[:10])
-    print(train_masks_store[:10])
-    print(train_ents_store[:10])
+    train_set = corpus[0] 
+    train_paths_store = train_set[0]  
+    train_masks_store = train_set[1]  
+    train_ents_store = train_set[2]  
+  
