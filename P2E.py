@@ -79,7 +79,7 @@ class CPC_word(nn.Module):
         forward_sequence = z[:, :-self.k_size,:]  # forward_sequence.shape: (B,W1,D)
         # feed ag model
         self.gru.flatten_parameters()
-        output, hidden = self.gru(forward_sequence, hidden)  # output.shape: (B,W1,D) 也即ct-3，ct-2，ct-1，ct
+        output, hidden = self.gru(forward_sequence, hidden)  # output.shape: (B,W1,D) 
         context = output[:, -1, :].view(batch,self.ar_dimension)  # context.shape: (B,D) (take last hidden state) 
         pred = torch.empty((self.k_size, batch, self.embedding_size), dtype=torch.float, device=device)  # pred (empty container).shape: (W2,B,D)
 
@@ -180,6 +180,7 @@ class TxtClassifier(nn.Module):
     def forward(self, x):
         x = self.classifier(x)
         return F.log_softmax(x, dim=-1)
+
 
 
 
