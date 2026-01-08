@@ -1,0 +1,11 @@
+_hypernym	0 ## 上位词
+_derivationally_related_form	1  ## 衍生相关形式
+_instance_hypernym	2  ## 上位词实例
+_also_see	3
+_member_meronym	4  ##部分词（用部分表示整体的词）成员
+_synset_domain_topic_of	5  #同义词集域主题
+_has_part	6
+_member_of_domain_usage	7  ## 域使用的成员
+_member_of_domain_region	8  ## 域区域的成员
+_verb_group	9 ## 动词组
+_similar_to 10 
