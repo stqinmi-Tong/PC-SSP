@@ -30,39 +30,20 @@ class Conve_Encoder(nn.Module):###genc
 
         flat_sz_w = int(self.sentence_len * self.k_w)-self.ker_sz+1
         flat_sz_h = self.k_h-self.ker_sz+1
-        self.flat_sz = flat_sz_h * flat_sz_w * self.num_filt  ###flat_sz_h * flat_sz_w ：卷积之后的每个通道的卷积特征图大小，
+        self.flat_sz = flat_sz_h * flat_sz_w * self.num_filt  
         self.conv2 = nn.Conv1d(in_channels=self.flat_sz, out_channels=encoder_dim, kernel_size=1)
         self.fc = torch.nn.Linear(self.flat_sz, encoder_dim)
 
 
-    def concat(self, x): # 之前：x:(B,D) sentence=2时：x.shape:(B,4,2,D)；sentence=3时：x.shape:(B,1,3,D)
+    def concat(self, x): 
         B = x.shape[0]
         x = x.view(-1, self.sentence_len, self.hidden_dim) #self.hidden_dim=embed_dim  #torch.Size([256, 3, 200])
         stack_inp = torch.transpose(x, 2, 1).reshape((B * self.windows, 1, self.sentence_len * self.k_w, self.k_h))
         return stack_inp
 
-    def forward(self, x):  # x.shape: (B,S,D), 这里S=2或者3，由于S长度不一，需要设置两种编码器.这里处理S=2的情况
+    def forward(self, x):  # x.shape: (B,S,D)
         B = x.shape[0]
 
-        ###
-        # sub_emb = self.ent_embed(sub)
-        # rel_emb = self.rel_embed(rel)
-        # comb_emb = torch.cat([sub_emb, rel_emb], dim=1)
-        # # change
-        # chequer_perm = comb_emb[:, :]
-        # # chequer_perm = comb_emb[self.chequer_perm[0], :][:, self.chequer_perm[1]]
-        # ## end
-        # stack_inp = chequer_perm.reshape((-1, self.p.perm, 2 * self.p.k_w, self.p.k_h))
-        # # change
-        # stack_inp = stack_inp[:, :, self.chequer_perm, :]
-        # stack_inp = stack_inp.reshape((-1, self.p.perm, 2 * self.p.k_w, self.p.k_h))  # oops torch.Size([64, 4, 20, 20])
-        # # end
-        # stack_inp = self.bn0(stack_inp)
-        # x = self.inp_drop(stack_inp)
-        # x = self.circular_padding_chw(x, self.p.ker_sz // 2)  # torch.Size([64, 4, 30, 30])
-        # x = F.conv2d(x, self.conv_filt.repeat(self.p.perm, 1, 1, 1), padding=self.padding,
-        #              groups=self.p.perm)  # conv2d torch.Size([64, 384, 20, 20]
-        ###
         stk_inp = self.concat(x)
         x = self.bn0(stk_inp)
         x = self.input_drop(x)
@@ -77,9 +58,9 @@ class Conve_Encoder(nn.Module):###genc
         # x = x.squeeze(0).transpose(0,1) #torch.Size([1024, 200])
         # x = F.relu(x)  #x.shape:(B*4,D)
 
-        return x  # 压缩矩阵的维数
+        return x  
 
-class CPC_sentence(nn.Module):####输入流数据是每一个批次的每个路径的关系，实体，mask和负采样实体
+class CPC_sentence(nn.Module):
     def __init__(self, ent_vocab, rel_vocab, embedding_size,enc_dim, ar_dim, window,
                  k_size, path_length,bias):
         super(CPC_sentence, self).__init__()
@@ -91,7 +72,7 @@ class CPC_sentence(nn.Module):####输入流数据是每一个批次的每个路�
         self.embedding_size = embedding_size
         self.enc_dim = enc_dim
         self.ar_dimension = ar_dim
-        self.k_size = k_size   ###指的窗口大小,我们选取的路径长度为5，有两跳，想先选k=3试试，从第一个三元组的尾实体开始测试
+        self.k_size = k_size   
         self.kernel_sz = 3
         self.k_w = 10
         self.k_h = 20
@@ -119,14 +100,13 @@ class CPC_sentence(nn.Module):####输入流数据是每一个批次的每个路�
             b=self.embedding_range.item()
         )
 
-        # define type of encoder: genc，输入为emb_dim维度的向量，输出为enc_dim维度的向量
         self.encoder_1 = Conve_Encoder(
             ker_sz=self.kernel_sz,
             k_w=self.k_w,
             k_h=self.k_h,
             hidden_dim=self.embedding_size,
             encoder_dim=self.enc_dim,
-            sentence_len=2,  ###最大句子长度
+            sentence_len=2,  
             window=4,
             bias = bias
         )
@@ -136,11 +116,11 @@ class CPC_sentence(nn.Module):####输入流数据是每一个批次的每个路�
             k_h=self.k_h,
             hidden_dim=self.embedding_size,
             encoder_dim=self.enc_dim,
-            sentence_len=3,  ###最大句子长度
+            sentence_len=3,  
             window=1,
             bias=bias
         )
-        # define autoregressive model: gar,输入维度为enc_dimension的向量得到维度为ar_dimension的结果向量
+        # define autoregressive model: gar
         self.gru = nn.GRU(
             self.enc_dim,
             self.ar_dimension,
@@ -157,7 +137,7 @@ class CPC_sentence(nn.Module):####输入流数据是每一个批次的每个路�
             return torch.zeros(1, batch_size, self.ar_dimension)
 
     # B: Batch, W: Window, S: Sentence, D: Dimension
-    def forward(self, x, device):  # x.shape: (B,P) ####输入流数据是每一个批次的每个路径P,P=11
+    def forward(self, x, device):  # x.shape: (B,P) 
 
         batch = x.shape[0]
         hidden = self.init_hidden(batch, device)  # hidden.shape:(B,D) D(default:2400)
@@ -168,22 +148,19 @@ class CPC_sentence(nn.Module):####输入流数据是每一个批次的每个路�
 
         # separate forward and target samples  W1: forward window, W2: target window
         target = z[:, -self.k_size:, :].transpose(0, 1)  # target.shape: (W2,B,D)
-        forward_sequence = z[:, :-self.k_size, :]  # forward_sequence.shape: (B,W1,D)，，W1+W2=len，前W1是输入，后W2是要做验证的输出，len=W
+        forward_sequence = z[:, :-self.k_size, :]  # forward_sequence.shape: (B,W1,D)，W1+W2=len
 
         # feed ag model
         self.gru.flatten_parameters()
-        output, hidden = self.gru(forward_sequence, hidden)  # output.shape: (B,W1,D) 也即ct-3，ct-2，ct-1，ct
-        context = output[:, -1, :].view(batch, self.ar_dimension)  # context.shape: (B,D) (take last hidden state) 也即把ct取出来，这里D=self.ar_dimension，torch.Size([64, 32])
+        output, hidden = self.gru(forward_sequence, hidden)  # output.shape: (B,W1,D) 
+        context = output[:, -1, :].view(batch, self.ar_dimension)  # context.shape: (B,D) (take last hidden state) 
         pred = torch.empty((self.k_size, batch, self.enc_dim), dtype=torch.float)#, device=device)  # pred (empty container).shape: (W2,B,D)
 
         # loop of prediction
         for i in range(self.k_size):
             linear = self.Wk[i]  #（self.enc_dim, self.ar_dimension） Linear(in_features=32, out_features=64, bias=True)  context: torch.Size([64, 32])
-            pred[i] = linear(context)  # Wk*context.shape: (B,D) pred[i].shape:(B,self.enc_dim),pred.shape: (k_size,B,self.enc_dim)也即（W2，B，D）
-
-
-        # loss, accuracy = self.info_nce(pred.detach().cpu().numpy(), target)  # shape: (W2,B,D)
-        #把detach去掉试试
+            pred[i] = linear(context)  # Wk*context.shape: (B,D) pred[i].shape:(B,self.enc_dim),pred.shape: (k_size,B,self.enc_dim) =（W2，B，D）
+       
         loss, accuracy = self.info_nce(pred, target)  # shape: (W2,B,D)
         return loss, accuracy
 
@@ -229,14 +206,14 @@ class CPC_sentence(nn.Module):####输入流数据是每一个批次的每个路�
         return input_embedding
 
 
-    def get_cpc_embedding(self,x): # x.shape: (B,P,D) ####输入流数据是每一个批次的每个路径P,P=11
-        ####将每个p处理成[2,2,2,2,3]
+    def get_cpc_embedding(self,x): # x.shape: (B,P,D) 
+       
         seg_path = []
         encod_out = []
 
         y = torch.split(x, [2,2,2,2,3], dim=1)
         for i in y:
-            seg_path.append(i) # i分别是(B,2,D)(B,2,D)(B,2,D)(B,2,D)(B,3,D)
+            seg_path.append(i) 
             ##### i.shape:
             # torch.Size([256, 2, 200])
             # torch.Size([256, 2, 200])
@@ -305,20 +282,6 @@ class TxtClassifier(nn.Module):
         x = self.classifier(x)
         return F.log_softmax(x, dim=-1)
 
-# if __name__ =='__main__':
-#     print('=====CPC testing=====')
-#     device = torch.device('cuda:0' if torch.cuda.is_available() else 'CPU')
-#     ents = torch.ones([128, 3]).long().to(device)
-#     rels = torch.ones([128, 2]).long().to(device)
-#
-#     # gru_ouput = torch.zeros([64, 300, 2]).to(device)
-#     # ent_negs = torch.zeros([64, 2, 20]).long().to(device)
-#     ent_negs = None
-#     # (self, ent_vocab, rel_vocab, embedding_size,ar_dim, window, k_size,path_length)
-#     model = CPC_sentence(60, 6, 100, 100,100, 5, 3, 5).to(device)
-#     loss, accuracy = model(ents, rels,device)  # forward(self, ents, rels)
-#     print('loss', loss) #loss tensor([[5.5461, 5.2585, 6.1626]], device='cuda:0',       grad_fn=<UnsqueezeBackward0>)
-#     print('accuracy', accuracy) #accuracy tensor([[0.0078, 0.0078, 0.0000]], device='cuda:0')
-#
-#     # txt_model = TxtClassifier(config).to(device)
+
+
 
