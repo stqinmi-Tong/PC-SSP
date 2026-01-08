@@ -7,8 +7,8 @@ import argparse
 from Data.dataset import *
 from Data.preprocessing import load_data
 from generate_path.preprocess import read_entity_from_id, read_relation_from_id
-from CPC_word import *
-from CPC_sentence import *
+from P2E import *
+from P2P import *
 import time
 from timeit import default_timer as timer
 import os
@@ -23,11 +23,9 @@ def get_arguments():
     parser = argparse.ArgumentParser(description="CPC")
     parser.add_argument("--name", default='testrun', help="Set filename for saving or restoring models")
     parser.add_argument("--batch-size", type=int, default=256, help="Number of path sent to the network in one step.")
-    parser.add_argument("--data-dir", type=str, default="./generate_path/data/WN18RR/", help="")
+    parser.add_argument("--data_dir", type=str, default="./generate_path/data/WN18RR/", help="")
     parser.add_argument('-logdir', dest="log_dir", default='./log/', help='Log directory')
-    parser.add_argument("--snapshot-dir", type=str, default="./snapshot", help="")
-    parser.add_argument("--train-dataset", type=list, default=['path_store_train_5.pt'], help="")
-    parser.add_argument("--test-dataset", type=list, default=['path_store_test_5.pt'], help="")
+    parser.add_argument("--snapshot_dir", type=str, default="./snapshot", help="")
     parser.add_argument("--hidden-size", type=int, default=2000, help="Number of hidden layer")
     parser.add_argument("--embedding-size", type=int, default=2000, help="Number of embedding layer")
     parser.add_argument("--learning-rate", type=float, default=0.0001, help="")#0.0001
@@ -46,7 +44,7 @@ def get_arguments():
     parser.add_argument('-config', dest="config_dir", default='./config/',  help='Config directory')
     parser.add_argument('-restore', dest="restore", action='store_true', help='Restore from the previously saved model')
     parser.add_argument("-gpu", type=str, default='1',  help="Set GPU Ids")
-    parser.add_argument("-mode", type=str, default='word',  help="set Model level : word or sentence")
+    parser.add_argument("-mode", type=str, default='Element',  help="set Model level : Element or Subpath")
     parser.add_argument('-seed', dest="seed", default=42, type=int, help='Seed for randomization')
 
     parser.add_argument('-opt', dest="opt", default='adam', help='GPU to use')
@@ -59,11 +57,10 @@ class Main(object):
 
         args.entity2id = read_entity_from_id(args.data_dir)
         args.relation2id,_ = read_relation_from_id(args.data_dir)
-        self.ent_vocab_size = len(args.entity2id)  # 实体数目
-        self.rel_vocab_size = len(args.relation2id) + 1  # add one zero pad index # 加上0关系
+        self.ent_vocab_size = len(args.entity2id)  
+        self.rel_vocab_size = len(args.relation2id) + 1 
 
-        ###数据处理
-        if args.mode == 'word':
+        if args.mode == 'Element':
             self.corpus, self.tuple2tailset, self.rel2tailset = load_data(args.data_dir, args.train_dataset,
                                                                           args.max_length)
 
@@ -75,10 +72,10 @@ class Main(object):
 
             # train_dataloader
             self.train_dataset = Train_Dataset(args)
-            self.train_dataset_size = len(self.train_dataset)  # 数据集数量
+            self.train_dataset_size = len(self.train_dataset) 
             train_indices = list(range(self.train_dataset_size))
 
-            np.random.shuffle(train_indices)  # 随机打乱数据集序号
+            np.random.shuffle(train_indices) 
             # self.train_sampler = data.sampler.SubsetRandomSampler(indices)
 
             self.train_sampler = data.sampler.SubsetRandomSampler(np.random.choice(range(self.train_dataset_size),
@@ -105,13 +102,13 @@ class Main(object):
             self.test_loader = data.DataLoader(self.test_dataset, batch_size=args.batch_size,
                                                sampler=self.test_sampler,
                                                num_workers=args.num_workers)
-        if args.mode == 'sentence':
+        if args.mode == 'Subpath':
             self.train_dataset = Train_Path_Dataset(args)
             # self.valid_dataset = Valid_Path_Dataset(args)
             # self.test_dataset = Test_Path_Dataset(args)
 
             train_indices = list(range(len(self.train_dataset)))
-            np.random.shuffle(train_indices)  # 随机打乱数据集序号
+            np.random.shuffle(train_indices) 
             train_sampler = data.sampler.SubsetRandomSampler(
                 np.random.choice(range(len(self.train_dataset)), int(0.05 * len(self.train_dataset))))
             self.data_loader = data.DataLoader(self.train_dataset,
@@ -124,20 +121,9 @@ class Main(object):
             self.corpus, _,_ = load_data(args.data_dir, args.train_dataset, args.max_length)
             args.train_set = self.corpus[0]
 
-            # self.train_dataset_w = Train_Dataset(args)
-            # self.train_dataset_size = len(self.train_dataset_w)  # 数据集数量
-              # train_indices_w = list(range(self.train_dataset_size))
-            #
-            # np.random.shuffle(train_indices_w)  # 随机打乱数据集序号
-            # self.train_sampler_w = data.sampler.SubsetRandomSampler(np.random.choice(range(self.train_dataset_size),
-            #                                                                        int(0.05 * self.train_dataset_size)))
-            # self.data_loader_w = data.DataLoader(self.train_dataset_w, batch_size=args.batch_size,
-            #                                    sampler=self.train_sampler_w,
-            #                                    num_workers=args.num_workers, drop_last=True)
-
             self.train_dataset_j = Train_Joint_Dataset(args)
             train_indices_j = list(range(len(self.train_dataset_j)))
-            np.random.shuffle(train_indices_j)  # 随机打乱数据集序号
+            np.random.shuffle(train_indices_j)  
             train_sampler_j = data.sampler.SubsetRandomSampler(np.random.choice(range(len(self.train_dataset_j)),
                                                                                 int(0.02*len(self.train_dataset_j))))#0.02
             self.data_loader = data.DataLoader(self.train_dataset_j,
@@ -145,8 +131,6 @@ class Main(object):
                                            sampler=train_sampler_j,
                                            drop_last=True
                                            )
-
-
 
     def __init__(self, args):
         self.p = args
@@ -167,15 +151,15 @@ class Main(object):
 
 
         self.load_data(args)
-        ####定义模型
-        if  self.p.mode == 'word':
+       
+        if  self.p.mode == 'Element':
             self.model = CPC_word(self.ent_vocab_size, self.rel_vocab_size, 200, 200, 5, self.k_size, 5).to(self.device)
             self.optimizer = optim.Adam(
                 filter(lambda p: p.requires_grad, self.model.parameters()),
                 lr=0.01, betas=(0.9, 0.98), eps=1e-09, weight_decay=0, amsgrad=True)
             total = sum([param.nelement() for param in self.model.parameters()])
             print("Number of parameter: %.2fM" % (total / 1e6))
-        elif self.p.mode == 'sentence':
+        elif self.p.mode == 'Subpath':
             self.model = CPC_sentence(self.ent_vocab_size, self.rel_vocab_size, 2000,2000,2000, 5, self.k_size, 11,self.p.bias).to(self.device)
             self.optimizer = optim.Adam(
                 filter(lambda p: p.requires_grad, self.model.parameters()),
@@ -195,13 +179,6 @@ class Main(object):
                                         betas=(0.9, 0.98), eps=1e-09, weight_decay=0, amsgrad=True)
             total = sum([param.nelement() for param in self.model_w.parameters()])+sum([param.nelement() for param in self.model_s.parameters()])
             print("Number of parameter: %.2fM" % (total / 1e6),)
-
-            # self.optimizer = optim.Adam(
-            #     filter(lambda p: p.requires_grad, [{'params': self.model_w.parameters(), 'lr': 0.0001},
-            #                                        {'params': self.model_s.parameters(), 'lr': 0.001}]),
-            #     lr=0.0001, betas=(0.9, 0.98), eps=1e-09, weight_decay=0, amsgrad=True)
-
-
 
 
     def lr_poly(self, base_lr, iter, max_iter, power):
@@ -255,14 +232,14 @@ class Main(object):
 
     def train(self, step, epoch, log_interval):
 
-        if args.mode == 'word' or args.mode == 'sentence':
+        if args.mode == 'Element' or args.mode == 'Subpath':
             self.model.train()
             total_loss = {i: 0.0 for i in range(1, self.k_size + 1)}
             total_acc = {i: 0.0 for i in range(1, self.k_size + 1)}
             for batch_idx, data in enumerate(self.data_loader):
                 self.optimizer.zero_grad()
                 self.adjust_learning_rate(self.optimizer, batch_idx, len(self.data_loader))
-                if self.p.mode == 'word':
+                if self.p.mode == 'Element':
                     relation, mask, entity = data
                     relation = relation.long().to(self.device)
                     entity = entity.long().to(self.device)
@@ -275,7 +252,7 @@ class Main(object):
                 loss = torch.mean(loss, 0)  # torch.Size([batch_size，3])
                 step += 1
                 for i, (a, l) in enumerate(zip(acc, loss)):
-                    total_loss[i + 1] += l.detach().item()  # 把.detach()去掉了
+                    total_loss[i + 1] += l.detach().item() 
                     total_acc[i + 1] += a.detach().item()
 
                 loss.sum().backward()
@@ -312,7 +289,7 @@ class Main(object):
                     total_loss_s[i + 1] += l_s.detach().item()
 
                 loss = self.lambda_w * loss_w + self.lambda_s *loss_s
-                ####自适应权重系数
+
                 mean_w = sum(total_loss_w.values()) / len(total_loss_w.keys())
                 mean_s = sum(total_loss_s.values()) / len(total_loss_s.keys())
                 self.lambda_w = mean_s / (mean_w + 1e-12)  # ~0.936
@@ -323,24 +300,13 @@ class Main(object):
                 loss = torch.mean(loss, 0)  # torch.Size([batch_size，3])
                 step += 1
                 for i, (a_w, a_s, l) in enumerate(zip(acc_w, acc_s, loss)):
-                    total_loss[i + 1] += l.detach().item()  # 把.detach()去掉了
+                    total_loss[i + 1] += l.detach().item()  
                     total_acc_w[i + 1] += a_w.detach().item()
                     total_acc_s[i + 1] += a_s.detach().item()
                     total_acc[i + 1] = (total_acc_w[i + 1] + total_acc_s[i + 1]) * 0.5
                 loss.sum().backward()
                 self.optimizer.step()
 
-                # acc_w = torch.mean(accuracy_w, 0)
-                # acc_s = torch.mean(accuracy_s, 0)
-                # loss = torch.mean(loss, 0)  # torch.Size([batch_size，3])
-                # step += 1
-                # for i, (a_w,a_s, l) in enumerate(zip(acc_w,acc_s, loss)):
-                #     total_loss[i + 1] += l.detach().item()  # 把.detach()去掉了
-                #     total_acc_w[i + 1] += a_w.detach().item()
-                #     total_acc_s[i + 1] += a_s.detach().item()
-                #     total_acc[i + 1] = (total_acc_w[i + 1] + total_acc_s[i + 1])*0.5
-                # loss.sum().backward()
-                # self.optimizer.step()
 
                 if batch_idx % log_interval == 0:
                     self.logger.info('Train Epoch: {} [{}/{} ({:.0f}%)]\tAccuracy_w: {:.4f}\tAccuracy_s: {:.4f}\tLoss: {:.6f}'.format(
@@ -438,29 +404,9 @@ class Main(object):
         print(ent_embed.shape)  ##(40943,500) ([14541, 200])
         print(rel_embed.shape)  ##(23,500) ([475, 200])
 
-        torch.save(rel_embed, "./generate_path/data/FB15k-237/rel_embedding_lambda_w_200.pt")#FB15k-237,WN18RR
-        torch.save(ent_embed, "./generate_path/data/FB15k-237/ent_embedding_lambda_w_200.pt")
-            # val_acc, val_loss = self.validation(self.valid_loader, 'validation')
-            # test_acc, test_loss = self.validation(self.test_loader, 'test')
-            # self.logger.info(
-            #     "#### End epoch {}/{}, val_acc: {},val_loss:{}".format(epoch, self.p.epochs, val_acc, val_loss))
-            # if val_acc > self.best_acc:
-            #     best_acc = max(val_acc, self.best_acc)
-            #     dict_to_save = self.model.state_dict()
-            #     best_epoch = epoch
-            #     self.snapshot('./logs', run_name, {
-            #         'epoch': epoch,
-            #         'step_train': step,
-            #         'validation_acc': val_acc,
-            #         'validation_loss': val_loss,
-            #         'state_dict': dict_to_save,
-            #         'optimizer': self.optimizer.state_dict(),
-            #         'best_acc': best_acc,
-            #         'best_epoch':best_epoch
-            #     })
-            # end_epoch_timer = timer()
-            # self.logger.info(
-            #     "#### End epoch {}/{}, elapsed time: {}".format(epoch, self.p.epochs, end_epoch_timer - epoch_timer))
+        torch.save(rel_embed, self.p.data_dir+"rel_embedding.pt")
+        torch.save(ent_embed, self.p.data_dir+"ent_embedding.pt")
+           
 
 
 if __name__ == "__main__":
@@ -470,6 +416,7 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
     model = Main(args)
     model.fit()
+
 
 
 
