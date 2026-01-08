@@ -1,31 +1,28 @@
 import os
-
 import numpy as np
 import torch
 from tqdm import tqdm
 from preprocess import build_data
 from collections import Counter
 import random
-# %%matplotlib inline  #IPython notebook中的魔法方法，这样每次运行后可以直接得到图像，不再需要使用plt.show()
-import seaborn as sns  #习惯上简写成sns
+import seaborn as sns  
 import matplotlib.pyplot as plt
-sns.set()           #切换到seaborn的默认运行配置
+sns.set()         
 def load_all_triples():
     rootpath= './data/FB15k-237/'
-    files=['train.txt', 'dev.txt', 'test.txt']
-#     triple2id={}
-    tuple2tailset={} ##tuple2tailset={tuple(head,rel):tail_set},包含正反三元组关系
+    files=['train.txt', 'valid.txt', 'test.txt']
+    tuple2tailset={} ##tuple2tailset={tuple(head,rel):tail_set}
     for file_id, file in enumerate(files):
         readfile=open(rootpath+file, 'r')
         for line in readfile:
             parts=line.strip().split()
             length=len(parts)
             if length ==3 or (length ==4 and parts[3]=='1'):
-                tuple=(parts[0], parts[1]) ###tuple是头实体和关系的对
+                tuple=(parts[0], parts[1]) 
                 tail=parts[2]
-                r_tuple=(parts[2], '**'+parts[1])###r_tuple是逆关系
-                r_tail=parts[0] ##之前的头实体变成了逆关系中的尾实体
-                exist_tailset = tuple2tailset.get(tuple) #Python 字典(Dictionary) get() 函数返回指定键的值。
+                r_tuple=(parts[2], '**'+parts[1])
+                r_tail=parts[0]
+                exist_tailset = tuple2tailset.get(tuple) 
                 if exist_tailset is  None:
                     exist_tailset = set()
                 exist_tailset.add(tail)
@@ -65,23 +62,18 @@ def recover_entities_for_guu_paths(ent_nighbors):
 
             line_co+=1
             if line_co % 1000==0:
-                print(line_co, '....') ###记录并显示处理的进度
+                print(line_co, '....') 
 
-    print('recovered file produced ... over')  ###路径数据处理完成
+    print('recovered file produced ... over')  
     return path_store
 
-
-
-
-def get_graph(train_data,validation_data,test_data):###生成图，是一个字典，以每个源实体为keys
+def get_graph(train_data,validation_data,test_data):
       # graph = {'A': [('B', 'ab'), ('C', 'ac'), ('D', 'ad')], 'B': [('E','be')],...}
         graph_train = {}
         graph_dev = {}
         graph_test = {}
         graph = {}
-        # all_tiples_train应该是[[1,2,1],[3,4,1][5,6,1],[7,8,1],...],每项中是尾实体、头实体和关系），
-        # 第三项是label标签，如果有关系就为1，没标签就是0
-        # train_adj_matrix[0]是adj_indices, train_adj_matrix[1]是adj_values，
+       
         adj_indices = torch.LongTensor([train_data[1][0], train_data[1][1]])  # rows and columns
         adj_values = torch.LongTensor(train_data[1][2])
         train_adj_matrix = (adj_indices, adj_values)
@@ -169,7 +161,7 @@ def findAllPath(graph, start, end, flag, path=[]):
         path = path + [start]
         if start == end:
             return [path]
-        paths = []  # 存储全部路径
+        paths = []  
         flag = 1
         for node in graph[start]:
             if node[0] not in path:
@@ -180,7 +172,7 @@ def findAllPath(graph, start, end, flag, path=[]):
         path = path + [start[1]] +[start[0]]
         if start[0] == end:
             return [path]
-        paths = []  # 存储全部路径
+        paths = [] 
         # print(start)
         for node in graph[start[0]]:
             if node[0] not in path:
@@ -198,7 +190,7 @@ def findAllPaths(graph, start, distance,length,flag,path=[]):
             return [path]
         distance += 1
         flag = 1
-        paths = []  # 存储全部路径
+        paths = []  
 
         if len(graph[start]) > 8 :
             x = random.sample(graph[start], 4)
@@ -218,7 +210,7 @@ def findAllPaths(graph, start, distance,length,flag,path=[]):
             # print('distance', distance, start, [path])
             return [path]
         distance += 1
-        paths = []  # 存储全部路径
+        paths = [] 
         # print('start', start, 'distance', distance)\
         if len(graph[start[0]]) > 4:
             y = random.sample(graph[start[0]], 4)
@@ -242,15 +234,9 @@ def get_path(graph):
             continue
         for p in path:
             allpaths.append(p)
-        # for i in [5]:
-        #     path = findAllPaths(graph, node, 0, i, 0)   #(graph, start, distance,length,flag,path=[])
-        #     if path == []:
-        #         continue
-        #     for p in path:
-        #         allpaths.append(p)
+       
     return allpaths
 
-###查看每个实体的度
 def entity_dgree(graph):
     count_dict = {}
     count = []
@@ -262,9 +248,8 @@ def entity_dgree(graph):
        count.append(str(l))
     print(i,count)
 
-##统计最长路径的长度
 def path_length():
-    dev_paths = torch.load("./data/FB15k-237/dev_paths.pt")
+    dev_paths = torch.load("./data/FB15k-237/valid_paths.pt")
     max_length = 0
     for i in dev_paths:
         l = len(i)
@@ -272,7 +257,6 @@ def path_length():
             max_length = l
     print(max_length)
 
-###统计图里的最大邻居节点数和平均节点数
 def neighbor_number(graph_test):
     count = 0
     max_neighbors = 0
@@ -286,9 +270,8 @@ def neighbor_number(graph_test):
     ave_neighbors = count/len(graph_test.keys())
     print('max',max_neighbors,'ave',ave_neighbors)
 
-####绘制每个图中节点的邻接节点个数的频率分布图
 def statistics_neighbors(graph):
-    ###绘制图中每个实体的邻居个数频率
+    
     count_dict = {}
     count = []
     for node in graph.keys():
@@ -306,45 +289,42 @@ def statistics_neighbors(graph):
             x.append(i)
     x = np.array(x)
     return x
-def draw_neighbor_freq(graph_train,graph_dev,graph_test):
+def draw_neighbor_freq(graph_train,graph_valid,graph_test):
     x_train = statistics_neighbors(graph_train)
-    x_dev = statistics_neighbors(graph_dev)
+    x_val = statistics_neighbors(graph_valid)
     x_test = statistics_neighbors(graph_test)
     plt.tight_layout()
     plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=None, hspace=0.45)
     fig, axes = plt.subplots(1, 3, figsize=(20, 12))
     ax1 = sns.histplot(x_train, kde=False, ax=axes[0])
-    ax2 = sns.histplot(x_dev, kde=False, ax=axes[1])
+    ax2 = sns.histplot(x_val, kde=False, ax=axes[1])
     ax3 = sns.histplot(x_test, kde=False, ax=axes[2])
     axes_list = [ax1, ax2, ax3]
     ax1.set_xlabel("neighbors count of train graph")
     ax2.set_xlabel("neighbors count of dev graph")
     ax3.set_xlabel("neighbors count of test graph")
-    # 给直方图添加文字注释（就是在每一个bar的上方加文字）
+    
     for ax in axes_list:
         for p in ax.patches:
             if p.get_height() > 0:
                 ax.annotate(
-                    # 文字内容
                     text=f"{p.get_height():1.0f}",
-                    # 文字的位置
                     xy=(p.get_x() + p.get_width() / 2., p.get_height()),
                     xycoords='data',
                     ha='center',
                     va='center',
                     fontsize=10,
                     color='black',
-                    # 文字的偏移量
                     xytext=(0, 7),
                     textcoords='offset points',
                     clip_on=True,  # <---  important
                 )
-    plt.suptitle('Neighbor nodes count of entities in WN18RR',  # 标题名称
-                 x=0.5,  # x轴方向位置
-                 y=0.93,  # y轴方向位置
-                 size=15,  # 大小
-                 ha='center',  # 水平位置，相对于x,y，可选参数：{'center', 'left', right'}, default: 'center'
-                 va='top',  # 垂直位置，相对于x,y，可选参数：{'top', 'center', 'bottom', 'baseline'}, default: 'top'
+    plt.suptitle('Neighbor nodes count of entities in WN18RR',  
+                 x=0.5,  
+                 y=0.93,  
+                 size=15,  
+                 ha='center',  
+                 va='top',  
                  weight='bold')
     plt.savefig(os.path.join("./data/WN18RR/pics/", "neighbor count.pdf"))
     plt.show()
@@ -353,44 +333,10 @@ if __name__ == '__main__':
    # datasets = "./data/FB15k-237/"
    datasets = "./data/WN18RR/"
    train_data, validation_data, test_data, entity2id, relation2id = build_data(datasets, is_unweigted=False, directed=True)
-   graph_train, graph_dev, graph_test, graph = get_graph(train_data, validation_data, test_data)
-   #
-   # # print(graph_train)
+   graph_train, graph_valid, graph_test, graph = get_graph(train_data, validation_data, test_data)
+  
    train_paths = get_path(graph_train)
    torch.save(train_paths, datasets + "train_paths_11.pt")
    print(train_paths[:10], len(train_paths))
-   # dev_paths = get_path(graph_dev)
-   # torch.save(dev_paths, datasets + "dev_paths.pt")
-   #
-   # test_paths = get_path(graph_test)
-   # torch.save(test_paths, datasets + "test_paths.pt")
+ 
 
-   # train_paths = torch.load(datasets + "train_paths_11.pt")
-   # print(train_paths[:10],len(train_paths))
-   # dev_paths = torch.load(datasets + "dev_paths.pt")
-   # print(dev_paths[:10], len(dev_paths))
-   # test_paths = torch.load(datasets + "test_paths.pt")
-   # print(test_paths[:10], len(test_paths))
-
-
-   # paths = get_path(graph)
-   # torch.save(paths, datasets + "paths.pt")
-   #
-   # paths = torch.load(datasets + "paths.pt")
-   # print(paths[:10], len(paths))
-   # np.random.seed(0)
-   # shuffled_index = np.random.permutation(len(paths))
-   # split_train_index = int(len(paths)*0.8)
-   # split_val_index = int(len(paths)*0.9)
-   # train_index = shuffled_index[:split_train_index]
-   # val_index = shuffled_index[split_train_index+1:split_val_index]
-   # test_index = shuffled_index[split_val_index:]
-   # train_path = np.array(paths)[np.array(train_index)]
-   # val_path = np.array(paths)[np.array(val_index)]
-   # test_path = np.array(paths)[np.array(test_index)]
-   # torch.save(train_path, datasets + "train_path.pt")
-   # print(train_path[:10], len(train_path))
-   # torch.save(val_path, datasets + "val_path.pt")
-   # print(val_path[:10], len(val_path))
-   # torch.save(test_path, datasets + "test_path.pt")
-   # print(test_path[:10], len(test_path))
