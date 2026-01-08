@@ -321,3 +321,4 @@ class TxtClassifier(nn.Module):
 #     print('accuracy', accuracy) #accuracy tensor([[0.0078, 0.0078, 0.0000]], device='cuda:0')
 #
 #     # txt_model = TxtClassifier(config).to(device)
+
