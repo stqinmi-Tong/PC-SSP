@@ -33,19 +33,6 @@ def read_relation_from_id(file):
     for i, r_r in enumerate(r_rel):
         rel2id[r_r] = int(i+rel_num)
     return rel2id,rel2r_rel
-    
-def init_embeddings(entity_file, relation_file):
-    entity_emb, relation_emb = [], []
-
-    with open(entity_file) as f:
-        for line in f:
-            entity_emb.append([float(val) for val in line.strip().split()])
-
-    with open(relation_file) as f:
-        for line in f:
-            relation_emb.append([float(val) for val in line.strip().split()])
-
-    return np.array(entity_emb, dtype=np.float32), np.array(relation_emb, dtype=np.float32)
 
 
 def parse_line(line):
@@ -83,7 +70,7 @@ def load_data(file, entity2id, relation2id, is_unweigted=False, directed=True):
         else:
             data.append(relation2id[relation])
     print("number of unique_entities ->", len(unique_entities))
-    return triples_data, (rows, cols, data)#, list(unique_entities)
+    return triples_data, (rows, cols, data) 
 
 def add_reversetodata(relation_reverse,dataset_path,file_path,flag): ### add reverse tripltes into train/valid/test.txt
     triples = []
