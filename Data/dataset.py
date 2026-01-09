@@ -109,7 +109,7 @@ class Test_Dataset(data.Dataset):
 class Train_Path_Dataset(data.Dataset):
     def  __init__(self, args):
         self.args = args
-        self.dataset = torch.load(args.data_dir + "train_paths.pt")
+        self.dataset = torch.load(args.data_dir + "train_paths_5hop.pt")
 
         # self.path_length = self.dataset.shape[1]
         self.ent2id = args.entity2id  
@@ -174,7 +174,7 @@ class Train_Joint_Dataset(data.Dataset):
         self.ent_vocab_size = len(args.entity2id)  
         self.ent_str2id = args.entity2id 
 
-        self.dataset = torch.load(args.data_dir + "train_paths.pt")
+        self.dataset = torch.load(args.data_dir + "train_paths_5hop.pt")
         self.ent2id = args.entity2id  
         self.rel2id = args.relation2id 
 
@@ -207,4 +207,5 @@ class Train_Joint_Dataset(data.Dataset):
         y = np.zeros([self.ent_vocab_size], dtype=np.float32)
         for e2 in label: y[e2] = 1.0
         return torch.FloatTensor(y)
+
 
