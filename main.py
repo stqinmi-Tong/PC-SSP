@@ -23,12 +23,12 @@ def get_arguments():
     parser = argparse.ArgumentParser(description="PC-SSP")
     parser.add_argument("--name", default='testrun', help="Set filename for saving or restoring models")
     parser.add_argument("--train-dataset", type=list, default=['train_paths_2hop.pt'], help="")
-    parser.add_argument("--batch-size", type=int, default=256, help="Number of path sent to the network in one step.")
+    parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--data-dir", type=str, default="./generate_path/data/WN18RR/", help="")
     parser.add_argument('-logdir', dest="log_dir", default='./log/', help='Log directory')
     parser.add_argument("--snapshot-dir", type=str, default="./snapshot", help="")
     parser.add_argument("--hidden-size", type=int, default=2000, help="Number of hidden layer")
-    parser.add_argument("--embedding-size", type=int, default=2000, help="Number of embedding layer")
+    parser.add_argument("--embed-dim", type=int, default=2000, help="Number of embedding layer")
     parser.add_argument("--learning-rate", type=float, default=0.0001, help="")#0.0001
     parser.add_argument("--momentum", type=float, default=0.9, help="")
     parser.add_argument("--weight-decay", type=float, default=0.0005, help="")
@@ -120,28 +120,28 @@ class Main(object):
 
         self.load_data(args)
        
-        if  self.p.mode == 'Element':
-            self.model = CPC_word(self.ent_vocab_size, self.rel_vocab_size, 200, 200, 5, self.k_size, 5).to(self.device)
+          if  self.p.mode == 'Element':
+            self.model = P2E(self.ent_vocab_size, self.rel_vocab_size, self.p.embed_dim,
+                                  self.p.hidden_size, 5, self.k_size, 5).to(self.device)
             self.optimizer = optim.Adam(
                 filter(lambda p: p.requires_grad, self.model.parameters()),
                 lr=0.01, betas=(0.9, 0.98), eps=1e-09, weight_decay=0, amsgrad=True)
             total = sum([param.nelement() for param in self.model.parameters()])
             print("Number of parameter: %.2fM" % (total / 1e6))
         elif self.p.mode == 'Subpath':
-            self.model = CPC_sentence(self.ent_vocab_size, self.rel_vocab_size, 2000,2000,2000, 5, self.k_size, 11,self.p.bias).to(self.device)
+            self.model = P2P(self.ent_vocab_size, self.rel_vocab_size, self.p.embed_dim,
+                                      self.p.hidden_size, self.p.hidden_size, 5, self.k_size, 11,self.p.bias).to(self.device)
             self.optimizer = optim.Adam(
                 filter(lambda p: p.requires_grad, self.model.parameters()),
                 lr=0.000005, betas=(0.9, 0.98), eps=1e-09, weight_decay=0, amsgrad=True)
             total = sum([param.nelement() for param in self.model.parameters()])
             print("Number of parameter: %.2fM" % (total / 1e6))
         else:
-            self.model_w = CPC_word(self.ent_vocab_size, self.rel_vocab_size,
-                                  200, 200, 5,
+            self.model_w = P2E(self.ent_vocab_size, self.rel_vocab_size, self.p.embed_dim, self.p.hidden_size, 5,
                                     self.k_size, 5).to(self.device)
-            self.model_s = CPC_sentence(self.ent_vocab_size, self.rel_vocab_size,
-                                        200, 200, 200,
-                                        5, self.k_size, 11,
-                                      self.p.bias).to(self.device)
+            self.model_s = P2P(self.ent_vocab_size, self.rel_vocab_size,
+                                        self.p.embed_dim, self.p.hidden_size, self.p.hidden_size,
+                                        5, self.k_size, 11, self.p.bias).to(self.device)
             self.optimizer = optim.Adam([{'params': self.model_w.parameters(), 'lr':0.0001},
                                                  {'params': self.model_s.parameters(), 'lr': 0.0001}],
                                         betas=(0.9, 0.98), eps=1e-09, weight_decay=0, amsgrad=True)
@@ -301,7 +301,7 @@ class Main(object):
         total_acc = {i: 0.0 for i in range(1, self.k_size + 1)}
         with torch.no_grad():
             for batch_idx, data in enumerate(data_loader):
-                if self.p.mode == 'word':
+                if self.p.mode == 'Element':
                     relation, mask, entity = data
                     relation = relation.long().to(self.device)
                     entity = entity.long().to(self.device)
@@ -384,6 +384,7 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
     model = Main(args)
     model.fit()
+
 
 
 
