@@ -5,16 +5,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class CPC_word(nn.Module):  
+class P2E(nn.Module):  
     def __init__(self, ent_vocab, rel_vocab, embedding_size, ar_dim, window, k_size, path_length):
-        super(CPC_word, self).__init__()
+        super(P2E, self).__init__()
         # load parameters
         self.window = window
         self.path_length = path_length
         self.ent_vocab = ent_vocab
         self.rel_vocab = rel_vocab
         self.embedding_size = embedding_size
-        # self.enc_dimension = config.cpc_model.enc_dim
+
         self.ar_dimension = ar_dim
         self.k_size = k_size  
         self.epsilon = 2.0
@@ -180,6 +180,7 @@ class TxtClassifier(nn.Module):
     def forward(self, x):
         x = self.classifier(x)
         return F.log_softmax(x, dim=-1)
+
 
 
 
