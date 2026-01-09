@@ -20,12 +20,13 @@ def get_arguments():
     Returns:
       A list of parsed arguments.
     """
-    parser = argparse.ArgumentParser(description="CPC")
+    parser = argparse.ArgumentParser(description="PC-SSP")
     parser.add_argument("--name", default='testrun', help="Set filename for saving or restoring models")
+    parser.add_argument("--train-dataset", type=list, default=['train_paths_2hop.pt'], help="")
     parser.add_argument("--batch-size", type=int, default=256, help="Number of path sent to the network in one step.")
-    parser.add_argument("--data_dir", type=str, default="./generate_path/data/WN18RR/", help="")
+    parser.add_argument("--data-dir", type=str, default="./generate_path/data/WN18RR/", help="")
     parser.add_argument('-logdir', dest="log_dir", default='./log/', help='Log directory')
-    parser.add_argument("--snapshot_dir", type=str, default="./snapshot", help="")
+    parser.add_argument("--snapshot-dir", type=str, default="./snapshot", help="")
     parser.add_argument("--hidden-size", type=int, default=2000, help="Number of hidden layer")
     parser.add_argument("--embedding-size", type=int, default=2000, help="Number of embedding layer")
     parser.add_argument("--learning-rate", type=float, default=0.0001, help="")#0.0001
@@ -33,21 +34,16 @@ def get_arguments():
     parser.add_argument("--weight-decay", type=float, default=0.0005, help="")
     parser.add_argument("--num-workers", type=int, default=4, help="")
     parser.add_argument("--epochs", type=int, default=200, help="")
-    parser.add_argument("--l2-weight", type=float, default=0.001, help="")
-    parser.add_argument("--max-performance", type=float, default=0.46, help="")
-    parser.add_argument("--div-reg", type=float, default=0.1, help="")
-    parser.add_argument("--margin", type=float, default=0.3, help="")
     parser.add_argument("--max-length", type=int, default=2, help="")
     parser.add_argument("--neg-size", type=int, default=64, help="")
     parser.add_argument("--power", type=float, default=0.9, help="")
-    parser.add_argument("--cuda", type=int, default=1, help="")
     parser.add_argument('-config', dest="config_dir", default='./config/',  help='Config directory')
     parser.add_argument('-restore', dest="restore", action='store_true', help='Restore from the previously saved model')
     parser.add_argument("-gpu", type=str, default='1',  help="Set GPU Ids")
     parser.add_argument("-mode", type=str, default='Element',  help="set Model level : Element or Subpath")
     parser.add_argument('-seed', dest="seed", default=42, type=int, help='Seed for randomization')
 
-    parser.add_argument('-opt', dest="opt", default='adam', help='GPU to use')
+
     parser.add_argument('-bias', dest="bias", action='store_true', help='Restore from the previously saved model')
 
     return parser.parse_args()
@@ -65,47 +61,19 @@ class Main(object):
                                                                           args.max_length)
 
             args.train_set = self.corpus[0]
-            args.valid_set = self.corpus[1]
-            args.test_set = self.corpus[2]
-            # args.tuple2tailset = self.tuple2tailset  ##{(En, Rn): set(En+1, ...)}
-            # args.rel2tailset = self.rel2tailset  ##{Rn: set(En+1, ...)}
-
-            # train_dataloader
             self.train_dataset = Train_Dataset(args)
             self.train_dataset_size = len(self.train_dataset) 
             train_indices = list(range(self.train_dataset_size))
 
             np.random.shuffle(train_indices) 
-            # self.train_sampler = data.sampler.SubsetRandomSampler(indices)
-
             self.train_sampler = data.sampler.SubsetRandomSampler(np.random.choice(range(self.train_dataset_size),
-                                                                                   int(1*self.train_dataset_size)))#0.05
+                                                                                   int(1*self.train_dataset_size)))
             self.data_loader = data.DataLoader(self.train_dataset, batch_size=args.batch_size,
                                                 sampler=self.train_sampler,
                                                 num_workers=args.num_workers, drop_last=True)
-            # dev_dataloader
-            self.valid_dataset = Valid_Dataset(args)
-            # print(self.valid_dataset.__getitem__(2))
-            valid_indices = list(range(len(self.valid_dataset)))
-
-            np.random.shuffle(valid_indices)
-            self.valid_sampler = data.sampler.SubsetRandomSampler(valid_indices)
-            self.valid_loader = data.DataLoader(self.valid_dataset, batch_size=args.batch_size,
-                                                sampler=self.valid_sampler,
-                                                num_workers=args.num_workers
-                                                )
-            self.test_dataset = Test_Dataset(args)
-            test_indices = list(range(len(self.test_dataset)))
-
-            np.random.shuffle(test_indices)
-            self.test_sampler = data.sampler.SubsetRandomSampler(test_indices)
-            self.test_loader = data.DataLoader(self.test_dataset, batch_size=args.batch_size,
-                                               sampler=self.test_sampler,
-                                               num_workers=args.num_workers)
+           
         if args.mode == 'Subpath':
             self.train_dataset = Train_Path_Dataset(args)
-            # self.valid_dataset = Valid_Path_Dataset(args)
-            # self.test_dataset = Test_Path_Dataset(args)
 
             train_indices = list(range(len(self.train_dataset)))
             np.random.shuffle(train_indices) 
@@ -115,7 +83,7 @@ class Main(object):
                                                batch_size=args.batch_size,
                                                sampler=train_sampler,
                                                drop_last=True
-                                               )#0.02
+                                               )
 
         if args.mode == 'joint':
             self.corpus, _,_ = load_data(args.data_dir, args.train_dataset, args.max_length)
@@ -125,7 +93,7 @@ class Main(object):
             train_indices_j = list(range(len(self.train_dataset_j)))
             np.random.shuffle(train_indices_j)  
             train_sampler_j = data.sampler.SubsetRandomSampler(np.random.choice(range(len(self.train_dataset_j)),
-                                                                                int(0.02*len(self.train_dataset_j))))#0.02
+                                                                                int(0.02*len(self.train_dataset_j))))
             self.data_loader = data.DataLoader(self.train_dataset_j,
                                            batch_size=args.batch_size,
                                            sampler=train_sampler_j,
@@ -143,7 +111,7 @@ class Main(object):
             os.environ["CUDA_VISIBLE_DEVICES"] = '0,1,2,3'
             torch.cuda.set_device(2)
             self.device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
-            print('device',self.device)
+            print('device', self.device)
             torch.cuda.set_rng_state(torch.cuda.get_rng_state())
             torch.backends.cudnn.deterministic = True
         else:
@@ -394,9 +362,9 @@ class Main(object):
                     'best_acc': best_acc,
                     'best_epoch': best_epoch
                 })
-        if args.mode == 'word':
+        if args.mode == 'Element':
             ent_embed, rel_embed = self.model_w.get_embed()
-        elif args.mode == 'sentence':
+        elif args.mode == 'Subpath':
             ent_embed, rel_embed = self.model_s.get_embed()
         elif args.mode == 'joint':
             ent_embed, rel_embed = self.model_w.get_embed()
@@ -416,6 +384,7 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
     model = Main(args)
     model.fit()
+
 
 
 
