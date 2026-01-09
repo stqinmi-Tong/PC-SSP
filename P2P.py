@@ -60,10 +60,10 @@ class Conve_Encoder(nn.Module):###genc
 
         return x  
 
-class CPC_sentence(nn.Module):
+class P2P(nn.Module):
     def __init__(self, ent_vocab, rel_vocab, embedding_size,enc_dim, ar_dim, window,
                  k_size, path_length,bias):
-        super(CPC_sentence, self).__init__()
+        super(P2P, self).__init__()
         # load parameters
         self.window = window
         self.path_length = path_length # 11
@@ -281,6 +281,7 @@ class TxtClassifier(nn.Module):
     def forward(self, x):
         x = self.classifier(x)
         return F.log_softmax(x, dim=-1)
+
 
 
 
