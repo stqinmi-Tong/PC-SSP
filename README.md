@@ -20,7 +20,7 @@ python main.py --mode P2E
 
 The hyperparameter settings can be referred to in the following table:
 
-![](Path-based%20Self-Supervised%20Pretraining%20for%20Knowledge%20Graph%20Completion_md_files/9a11fe50-ed5c-11f0-acfa-87b4eaab79a9_20260109211051.jpeg?v=1&type=image&token=V1%253AAlpnu2awwlMCK2OAqIaPVFpN77ly_0tD9KTEUzopo6Q)
+<img width="1120" height="471" alt="image" src="https://github.com/user-attachments/assets/76f40f46-4200-4b5f-a721-470c71073464" />
 
 ### Link Prediction
 
